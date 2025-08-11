@@ -1,18 +1,17 @@
-#pip install pyttsx3 SpeechRecognition wikipedia pyaudio
-
+import streamlit as st
 import pyttsx3
 import speech_recognition as sr
+import wikipedia
 import webbrowser
 import datetime
-import wikipedia
+from pathlib import Path
 
-# Initialize the speech engine
-engine = pyttsx3.init()
-voices = engine.getProperty('voices')
-engine.setProperty('voice', voices[1].id)  # 0 = Male, 1 = Female
-
-def speak(audio):
-    """Speak the given text."""
+# ====== SPEECH ENGINE FUNCTION ======
+def speak(audio, selected_voice):
+    """Speak the given text with selected voice."""
+    engine = pyttsx3.init()
+    voices = engine.getProperty('voices')
+    engine.setProperty('voice', voices[selected_voice].id)
     engine.say(audio)
     engine.runAndWait()
 
@@ -20,97 +19,125 @@ def takeCommand():
     """Listen for a voice command and convert it to text."""
     r = sr.Recognizer()
     with sr.Microphone() as source:
-        print("Listening...")
+        st.info("🎤 Listening...")
         r.pause_threshold = 0.7
         audio = r.listen(source)
         try:
-            print("Recognizing...")
+            st.info("Recognizing...")
             query = r.recognize_google(audio, language='en-in')
-            print(f"You said: {query}")
-        except Exception as e:
-            print("Could not understand. Please say that again.")
-            return "None"
-    return query
+            st.success(f"✅ You said: {query}")
+            return query
+        except Exception:
+            st.error("❌ Could not understand. Please try again.")
+            return None
 
-def tellDay():
-    """Tell the current day of the week."""
+def tellDay(selected_voice):
     day = datetime.datetime.today().weekday() + 1
     Day_dict = {
         1: 'Monday', 2: 'Tuesday', 3: 'Wednesday',
         4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday'
     }
-    day_of_the_week = Day_dict.get(day, "Unknown day")
-    speak(f"Today is {day_of_the_week}")
-    print(f"Day: {day_of_the_week}")
+    speak(f"Today is {Day_dict.get(day)}", selected_voice)
+    return f"Today is {Day_dict.get(day)}"
 
-def tellTime():
-    """Tell the current time."""
+def tellTime(selected_voice):
     now = datetime.datetime.now()
     hour = now.strftime("%H")
     minute = now.strftime("%M")
-    speak(f"The time is {hour} hours and {minute} minutes")
-    print(f"Time: {hour}:{minute}")
+    speak(f"The time is {hour} hours and {minute} minutes", selected_voice)
+    return f"The time is {hour}:{minute}"
 
-def Hello():
-    """Initial greeting."""
-    speak("Hello sirr. I am Rovaa. your desktop assistant, Tell me how may I help you?")
+def process_query(query, selected_voice):
+    """Handle user commands and return output text."""
+    if not query:
+        return "No command received."
 
-def Take_query():
-    """Main loop to take user commands and respond."""
-    Hello()
+    query = query.lower()
 
-    while True:
-        query = takeCommand().lower()
+    if "music" in query or "play some music" in query:
+        speak("Playing music for you on YouTube", selected_voice)
+        webbrowser.open("https://www.youtube.com/playlist?list=PLzAU9IV3j-jhG9RZrYJXglUnFSm1qPrJo")
+        return "Playing music on YouTube"
 
-        if "play some music" in query or "music" in query:
-            speak("Opening gana")
-            webbrowser.open("https://gaana.com/")
+    elif "youtube" in query:
+        speak("Opening YouTube", selected_voice)
+        webbrowser.open("https://www.youtube.com/")
+        return "Opened YouTube"
+
+    elif "google" in query:
+        speak("Opening Google", selected_voice)
+        webbrowser.open("https://www.google.com")
+        return "Opened Google"
+
+    elif "linkedin" in query:
+        speak("Opening LinkedIn", selected_voice)
+        webbrowser.open("https://www.linkedin.com/in/rohith-chelimilla-9b45922a7/")
+        return "Opened LinkedIn"
+
+    elif "github" in query:
+        speak("Opening GitHub", selected_voice)
+        webbrowser.open("https://github.com/chelimillarohith")
+        return "Opened GitHub"
+
+    elif "day" in query:
+        return tellDay(selected_voice)
+
+    elif "time" in query:
+        return tellTime(selected_voice)
+
+    elif "wikipedia" in query or "who is" in query:
+        speak("Searching Wikipedia...", selected_voice)
+        for word in ["wikipedia", "who is", "tell me about"]:
+            query = query.replace(word, "")
+        query = query.strip()
+        try:
+            result = wikipedia.summary(query, sentences=2)
+            speak(result, selected_voice)
+            return result
+        except:
+            speak("Sorry, I couldn't find that on Wikipedia.", selected_voice)
+            return "Wikipedia search failed."
+
+    elif "your name" in query or "who are you" in query:
+        speak("I am Rova, your desktop assistant.", selected_voice)
+        return "I am Rova, your desktop assistant."
+
+    elif any(word in query for word in ["bye", "exit", "stop"]):
+        speak("Bye! Have a good day.", selected_voice)
+        st.stop()
+        return "Assistant stopped."
+
+    else:
+        speak("Sorry, I didn't understand that.", selected_voice)
+        return "Command not recognized."
+
+
+# ===== STREAMLIT FRONTEND =====
+st.set_page_config(page_title="Rova - Desktop Assistant", page_icon="🎤", layout="centered")
+
+st.markdown("<h1 style='text-align: center;'>🎤 Rova - Voice Assistant</h1>", unsafe_allow_html=True)
+
+# ===== VOICE SELECTION =====
+voice_choice = st.selectbox("Select Voice", ("Male Voice (voice[0])", "Female Voice (voice[1])"))
+selected_voice_index = 0 if "Male" in voice_choice else 1
+
+mic_icon = Path("mic.png")
+if mic_icon.exists():
+    st.image(str(mic_icon), width=150)
+
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    if st.button("🎙 Start Listening"):
+        speak("Hello sir! I am Rova. How can I help you?", selected_voice_index)
+        command = takeCommand()
+        if command:
+            result = process_query(command, selected_voice_index)
+            st.write(f"**Response:** {result}")
+
+with col2:
+    if st.button("⏹ Stop Assistant"):
+        speak("Assistant stopped.", selected_voice_index)
+        st.stop()
+        st.write("Assistant stopped.")
         
-        elif "open youtube" in query or "youtube" in query:
-            speak("Opening youtube")
-            webbrowser.open("https://www.youtube.com/")
-            
-        elif "open google" in query or "google" in query:
-            speak("Opening Google")
-            webbrowser.open("https://www.google.com")
-            
-        elif "open linkedin" in query or "linkedin" in query:
-            speak("Opening linkedin")
-            webbrowser.open("https://www.linkedin.com/in/rohith-chelimilla-9b45922a7/")
-        
-        elif "open github" in query or "github" in query:
-            speak("Opening github")
-            webbrowser.open("https://github.com/chelimillarohith")
-
-        elif "which day is it" in query or "day" in query:
-            tellDay()
-
-        elif "tell me the time" in query or "time" in query:
-            tellTime()
-
-        elif "from wikipedia" in query or "who is" in query:
-            speak("Searching Wikipedia...")
-            query = query.replace("from wikipedia", "").strip()
-            try:
-                result = wikipedia.summary(query, sentences=2)
-                speak("According to Wikipedia")
-                speak(result)
-                print(result)
-            except Exception as e:
-                speak("Sorry, I couldn't find that on Wikipedia.")
-                print("Wikipedia Error:", e)
-
-        elif "tell me your name" in query or "what is your name" in query or "who are you" in query:
-            speak("I am Rova, your desktop assistant.")
-
-        elif "bye" in query or "exit" in query or "stop" in query:
-            speak("Bye!, have a good day.")
-            print("Assistant stopped.")
-            break
-
-        else:
-            speak("Sorry, I didn't understand that. Please try again.")
-
-# Entry point
-if __name__ == '__main__':
-    Take_query()
