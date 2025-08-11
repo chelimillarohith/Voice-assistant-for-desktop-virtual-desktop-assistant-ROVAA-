@@ -1,6 +1,4 @@
-pyttsx3
-speechrecognition
 streamlit
 wikipedia
-webbrowser
+gtts
 requests
