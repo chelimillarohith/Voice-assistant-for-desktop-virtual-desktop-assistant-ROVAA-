@@ -1,0 +1,6 @@
+pyttsx3
+speechrecognition
+streamlit
+wikipedia
+webbrowser
+requests
