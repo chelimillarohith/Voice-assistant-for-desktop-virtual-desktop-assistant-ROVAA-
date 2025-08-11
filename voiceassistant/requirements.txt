@@ -2,4 +2,3 @@ streamlit
 wikipedia
 requests
 gtts
-streamlit-mic-recorder
