@@ -1,43 +1,27 @@
-import os
 import streamlit as st
+import pyttsx3
+import speech_recognition as sr
 import wikipedia
 import webbrowser
 import datetime
 from pathlib import Path
 
-# ===== DETECT CLOUD MODE =====
-CLOUD_MODE = os.environ.get("STREAMLIT_RUNTIME") is not None
-
-if not CLOUD_MODE:
-    import pyttsx3
-    import speech_recognition as sr
-else:
-    from gtts import gTTS
-
 # ====== SPEECH ENGINE FUNCTION ======
 def speak(audio, selected_voice):
     """Speak the given text with selected voice."""
-    if not CLOUD_MODE:
-        engine = pyttsx3.init()
-        voices = engine.getProperty('voices')
-        engine.setProperty('voice', voices[selected_voice].id)
-        engine.say(audio)
-        engine.runAndWait()
-    else:
-        tts = gTTS(text=audio, lang="en")
-        tts.save("voice.mp3")
-        st.audio("voice.mp3", format="audio/mp3", autoplay=True)
+    engine = pyttsx3.init()
+    voices = engine.getProperty('voices')
+    engine.setProperty('voice', voices[selected_voice].id)
+    engine.say(audio)
+    engine.runAndWait()
 
 def takeCommand():
     """Listen for a voice command and convert it to text."""
-    if CLOUD_MODE:
-        return st.text_input("Type your command here:")
-    else:
-        r = sr.Recognizer()
-        with sr.Microphone() as source:
-            st.info("🎤 Listening...")
-            r.pause_threshold = 0.7
-            audio = r.listen(source)
+    r = sr.Recognizer()
+    with sr.Microphone() as source:
+        st.info("🎤 Listening...")
+        r.pause_threshold = 0.7
+        audio = r.listen(source)
         try:
             st.info("Recognizing...")
             query = r.recognize_google(audio, language='en-in')
@@ -72,7 +56,7 @@ def process_query(query, selected_voice):
 
     if "music" in query or "play some music" in query:
         speak("Playing music for you on YouTube", selected_voice)
-        webbrowser.open("https://www.youtube.com/results?search_query=free+music")
+        webbrowser.open("https://www.youtube.com/playlist?list=PLzAU9IV3j-jhG9RZrYJXglUnFSm1qPrJo")
         return "Playing music on YouTube"
 
     elif "youtube" in query:
@@ -156,3 +140,4 @@ with col2:
         speak("Assistant stopped.", selected_voice_index)
         st.stop()
         st.write("Assistant stopped.")
+        
