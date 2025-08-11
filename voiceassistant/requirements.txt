@@ -1,6 +1,5 @@
-pyttsx3
-speechrecognition
 streamlit
 wikipedia
-webbrowser
 requests
+gtts
+streamlit-mic-recorder
