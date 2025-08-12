@@ -1,19 +1,32 @@
 import streamlit as st
-import pyttsx3
+
+# ====== PYTTSX3 IMPORT (SAFE MODE FOR CLOUD) ======
+try:
+    import pyttsx3
+    tts_available = True
+except ImportError:
+    tts_available = False
+    st.warning("⚠️ Voice output is disabled in this environment (pyttsx3 not available).")
+
 import speech_recognition as sr
 import wikipedia
 import webbrowser
 import datetime
 from pathlib import Path
 
+
 # ====== SPEECH ENGINE FUNCTION ======
 def speak(audio, selected_voice):
     """Speak the given text with selected voice."""
+    if not tts_available:
+        st.write(f"💬 {audio}")
+        return
     engine = pyttsx3.init()
     voices = engine.getProperty('voices')
     engine.setProperty('voice', voices[selected_voice].id)
     engine.say(audio)
     engine.runAndWait()
+
 
 def takeCommand():
     """Listen for a voice command and convert it to text."""
@@ -31,6 +44,7 @@ def takeCommand():
             st.error("❌ Could not understand. Please try again.")
             return None
 
+
 def tellDay(selected_voice):
     day = datetime.datetime.today().weekday() + 1
     Day_dict = {
@@ -40,12 +54,14 @@ def tellDay(selected_voice):
     speak(f"Today is {Day_dict.get(day)}", selected_voice)
     return f"Today is {Day_dict.get(day)}"
 
+
 def tellTime(selected_voice):
     now = datetime.datetime.now()
     hour = now.strftime("%H")
     minute = now.strftime("%M")
     speak(f"The time is {hour} hours and {minute} minutes", selected_voice)
     return f"The time is {hour}:{minute}"
+
 
 def process_query(query, selected_voice):
     """Handle user commands and return output text."""
@@ -114,10 +130,8 @@ def process_query(query, selected_voice):
 
 # ===== STREAMLIT FRONTEND =====
 st.set_page_config(page_title="Rova - Desktop Assistant", page_icon="🎤", layout="centered")
-
 st.markdown("<h1 style='text-align: center;'>🎤 Rova - Voice Assistant</h1>", unsafe_allow_html=True)
 
-# ===== VOICE SELECTION =====
 voice_choice = st.selectbox("Select Voice", ("Male Voice (voice[0])", "Female Voice (voice[1])"))
 selected_voice_index = 0 if "Male" in voice_choice else 1
 
@@ -140,4 +154,3 @@ with col2:
         speak("Assistant stopped.", selected_voice_index)
         st.stop()
         st.write("Assistant stopped.")
-        
