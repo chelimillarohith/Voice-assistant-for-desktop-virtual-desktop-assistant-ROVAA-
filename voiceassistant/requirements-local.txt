@@ -1,5 +1,0 @@
-pyttsx3
-speechrecognition
-streamlit
-wikipedia
-requests
