@@ -1,32 +1,20 @@
 import streamlit as st
-
-# ====== PYTTSX3 IMPORT (SAFE MODE FOR CLOUD) ======
-try:
-    import pyttsx3
-    tts_available = True
-except ImportError:
-    tts_available = False
-    st.warning("⚠️ Voice output is disabled in this environment (pyttsx3 not available).")
-
+from gtts import gTTS
+import io
 import speech_recognition as sr
 import wikipedia
 import webbrowser
 import datetime
 from pathlib import Path
 
-
-# ====== SPEECH ENGINE FUNCTION ======
-def speak(audio, selected_voice):
-    """Speak the given text with selected voice."""
-    if not tts_available:
-        st.write(f"💬 {audio}")
-        return
-    engine = pyttsx3.init()
-    voices = engine.getProperty('voices')
-    engine.setProperty('voice', voices[selected_voice].id)
-    engine.say(audio)
-    engine.runAndWait()
-
+# ====== SPEECH ENGINE FUNCTION (gTTS) ======
+def speak(audio):
+    """Generate speech with gTTS and play in browser."""
+    tts = gTTS(audio, lang='en')
+    mp3_fp = io.BytesIO()
+    tts.write_to_fp(mp3_fp)
+    mp3_fp.seek(0)
+    st.audio(mp3_fp.read(), format='audio/mp3')
 
 def takeCommand():
     """Listen for a voice command and convert it to text."""
@@ -44,26 +32,23 @@ def takeCommand():
             st.error("❌ Could not understand. Please try again.")
             return None
 
-
-def tellDay(selected_voice):
+def tellDay():
     day = datetime.datetime.today().weekday() + 1
     Day_dict = {
         1: 'Monday', 2: 'Tuesday', 3: 'Wednesday',
         4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday'
     }
-    speak(f"Today is {Day_dict.get(day)}", selected_voice)
+    speak(f"Today is {Day_dict.get(day)}")
     return f"Today is {Day_dict.get(day)}"
 
-
-def tellTime(selected_voice):
+def tellTime():
     now = datetime.datetime.now()
     hour = now.strftime("%H")
     minute = now.strftime("%M")
-    speak(f"The time is {hour} hours and {minute} minutes", selected_voice)
+    speak(f"The time is {hour} hours and {minute} minutes")
     return f"The time is {hour}:{minute}"
 
-
-def process_query(query, selected_voice):
+def process_query(query):
     """Handle user commands and return output text."""
     if not query:
         return "No command received."
@@ -71,69 +56,65 @@ def process_query(query, selected_voice):
     query = query.lower()
 
     if "music" in query or "play some music" in query:
-        speak("Playing music for you on YouTube", selected_voice)
+        speak("Playing music for you on YouTube")
         webbrowser.open("https://www.youtube.com/playlist?list=PLzAU9IV3j-jhG9RZrYJXglUnFSm1qPrJo")
         return "Playing music on YouTube"
 
     elif "youtube" in query:
-        speak("Opening YouTube", selected_voice)
+        speak("Opening YouTube")
         webbrowser.open("https://www.youtube.com/")
         return "Opened YouTube"
 
     elif "google" in query:
-        speak("Opening Google", selected_voice)
+        speak("Opening Google")
         webbrowser.open("https://www.google.com")
         return "Opened Google"
 
     elif "linkedin" in query:
-        speak("Opening LinkedIn", selected_voice)
+        speak("Opening LinkedIn")
         webbrowser.open("https://www.linkedin.com/in/rohith-chelimilla-9b45922a7/")
         return "Opened LinkedIn"
 
     elif "github" in query:
-        speak("Opening GitHub", selected_voice)
+        speak("Opening GitHub")
         webbrowser.open("https://github.com/chelimillarohith")
         return "Opened GitHub"
 
     elif "day" in query:
-        return tellDay(selected_voice)
+        return tellDay()
 
     elif "time" in query:
-        return tellTime(selected_voice)
+        return tellTime()
 
     elif "wikipedia" in query or "who is" in query:
-        speak("Searching Wikipedia...", selected_voice)
+        speak("Searching Wikipedia...")
         for word in ["wikipedia", "who is", "tell me about"]:
             query = query.replace(word, "")
         query = query.strip()
         try:
             result = wikipedia.summary(query, sentences=2)
-            speak(result, selected_voice)
+            speak(result)
             return result
         except:
-            speak("Sorry, I couldn't find that on Wikipedia.", selected_voice)
+            speak("Sorry, I couldn't find that on Wikipedia.")
             return "Wikipedia search failed."
 
     elif "your name" in query or "who are you" in query:
-        speak("I am Rova, your desktop assistant.", selected_voice)
+        speak("I am Rova, your desktop assistant.")
         return "I am Rova, your desktop assistant."
 
     elif any(word in query for word in ["bye", "exit", "stop"]):
-        speak("Bye! Have a good day.", selected_voice)
+        speak("Bye! Have a good day.")
         st.stop()
         return "Assistant stopped."
 
     else:
-        speak("Sorry, I didn't understand that.", selected_voice)
+        speak("Sorry, I didn't understand that.")
         return "Command not recognized."
-
 
 # ===== STREAMLIT FRONTEND =====
 st.set_page_config(page_title="Rova - Desktop Assistant", page_icon="🎤", layout="centered")
 st.markdown("<h1 style='text-align: center;'>🎤 Rova - Voice Assistant</h1>", unsafe_allow_html=True)
-
-voice_choice = st.selectbox("Select Voice", ("Male Voice (voice[0])", "Female Voice (voice[1])"))
-selected_voice_index = 0 if "Male" in voice_choice else 1
 
 mic_icon = Path("mic.png")  # Place mic.png in same folder
 if mic_icon.exists():
@@ -143,14 +124,14 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
     if st.button("🎙 Start Listening"):
-        speak("Hello sir! I am Rova. How can I help you?", selected_voice_index)
+        speak("Hello sir! I am Rova. How can I help you?")
         command = takeCommand()
         if command:
-            result = process_query(command, selected_voice_index)
+            result = process_query(command)
             st.write(f"**Response:** {result}")
 
 with col2:
     if st.button("⏹ Stop Assistant"):
-        speak("Assistant stopped.", selected_voice_index)
+        speak("Assistant stopped.")
         st.stop()
         st.write("Assistant stopped.")
