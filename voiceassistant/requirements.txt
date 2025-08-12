@@ -1,0 +1,6 @@
+streamlit
+gTTS
+streamlit-webrtc
+SpeechRecognition
+wikipedia
+pydub
