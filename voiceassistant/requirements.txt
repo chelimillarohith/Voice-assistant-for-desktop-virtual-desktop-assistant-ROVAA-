@@ -1,5 +1,4 @@
 streamlit
-gTTS
+pyttsx3
 SpeechRecognition
 wikipedia
-pydub
